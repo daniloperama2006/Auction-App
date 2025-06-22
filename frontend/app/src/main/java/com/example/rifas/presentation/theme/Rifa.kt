@@ -1,0 +1,11 @@
+package com.example.rifas.presentation.theme
+
+data class Rifa(
+    val id: Int,
+    val nombre: String,
+    val inscritos: String,
+    val fecha: String,
+    val matriz: String,
+    val ganador: Int ?= null
+)
+
