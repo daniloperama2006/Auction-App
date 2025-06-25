@@ -2,127 +2,112 @@ package com.example.rifas.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rifas.data.model.Auction
+import com.example.rifas.data.model.AuctionSummary
+import com.example.rifas.data.model.AuctionDetail
 import com.example.rifas.data.repository.AuctionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
-/**
- * ViewModel de subastas (auctions), sigue MVVM con Repository y StateFlow.
- * Exponemos:
- *  - auctionList: lista de subastas
- *  - selectedAuction: detalle de una subasta
- *  - createState: estado de creación de subasta (Idle/Loading/Success/Error)
- *  - winnerResult: estado de asignar ganador (Idle/Loading/Success/Error)
- */
-class AuctionViewModel(private val repository: AuctionRepository) : ViewModel() {
+class AuctionViewModel(
+    private val repository: AuctionRepository
+) : ViewModel() {
 
-    // Lista de subastas
-    private val _auctionList = MutableStateFlow<List<Auction>>(emptyList())
-    val auctionList: StateFlow<List<Auction>> = _auctionList
+    private val _auctionList = MutableStateFlow<List<AuctionSummary>>(emptyList())
+    val auctionList: StateFlow<List<AuctionSummary>> = _auctionList
 
-    // Subasta seleccionada (detalle)
-    private val _selectedAuction = MutableStateFlow<Auction?>(null)
-    val selectedAuction: StateFlow<Auction?> = _selectedAuction
+    private val _selectedAuctionDetail = MutableStateFlow<UiState<AuctionDetail>>(UiState.Idle)
+    val selectedAuctionDetail: StateFlow<UiState<AuctionDetail>> = _selectedAuctionDetail
 
-    // Estado de creación de subasta
-    private val _createState = MutableStateFlow<UiState<Auction>>(UiState.Idle)
-    val createState: StateFlow<UiState<Auction>> = _createState
+    private val _createState = MutableStateFlow<UiState<AuctionDetail>>(UiState.Idle)
+    val createState: StateFlow<UiState<AuctionDetail>> = _createState
 
-    // Estado de asignar ganador
-    private val _winnerResult = MutableStateFlow<UiState<Unit>>(UiState.Idle)
-    val winnerResult: StateFlow<UiState<Unit>> = _winnerResult
+    private val _bidState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
+    val bidState: StateFlow<UiState<Unit>> = _bidState
 
-    /**
-     * Carga la lista de subastas desde el repositorio.
-     */
-    fun loadAuctions() {
+    private val _finalizeState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
+    val finalizeState: StateFlow<UiState<Unit>> = _finalizeState
+
+    private val _deleteState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
+    val deleteState: StateFlow<UiState<Unit>> = _deleteState
+
+    fun loadAuctions(search: String? = null) {
         viewModelScope.launch {
-            // Podrías exponer un estado loadingList si lo deseas.
-            val result = repository.getAllAuctions()
-            result.onSuccess { list ->
+            repository.getAuctions(search).onSuccess { list ->
                 _auctionList.value = list
-            }.onFailure { ex ->
-                // Opcional: manejar error de lista, p.ej. exponer un StateFlow<String?> errorList
-                // Aquí por simplicidad no hacemos nada extra.
             }
         }
     }
 
-    /**
-     * Carga una subasta por su ID.
-     */
-    fun loadAuctionById(id: Int) {
+    fun loadAuctionDetail(id: Int) {
         viewModelScope.launch {
-            // Podrías exponer un estado loadingDetail si lo deseas
-            val result = repository.getAuctionById(id)
-            result.onSuccess { auction ->
-                _selectedAuction.value = auction
+            _selectedAuctionDetail.value = UiState.Loading
+            repository.getAuctionDetail(id).onSuccess { detail ->
+                _selectedAuctionDetail.value = UiState.Success(detail)
             }.onFailure { ex ->
-                // Opcional: exponer errorDetail
+                _selectedAuctionDetail.value = UiState.Error(ex)
             }
         }
     }
 
-    /**
-     * Crea una nueva subasta. Exponer el estado en createState.
-     */
-    fun createAuction(auction: Auction) {
+    fun createAuction(
+        name: String,
+        date: String,
+        minOffer: Long,
+        imagePart: MultipartBody.Part?
+    ) {
         viewModelScope.launch {
             _createState.value = UiState.Loading
-            val result = repository.createAuction(auction)
-            if (result.isSuccess) {
-                val created = result.getOrThrow()
+            repository.createAuction(name, date, minOffer, imagePart).onSuccess { created ->
                 _createState.value = UiState.Success(created)
-                // Tras éxito, recargar lista
                 loadAuctions()
-            } else {
-                _createState.value = UiState.Error(result.exceptionOrNull() ?: Exception("Unknown error"))
+            }.onFailure { ex ->
+                _createState.value = UiState.Error(ex)
             }
         }
     }
 
-    /**
-     * Resetea el estado de creación a Idle, para poder reutilizar la pantalla sin repetir toasts.
-     */
     fun resetCreateState() {
         _createState.value = UiState.Idle
     }
 
-    /**
-     * Actualiza una subasta existente.
-     */
-    fun updateAuction(id: Int, auction: Auction) {
+    fun postBid(auctionId: Int, number: Int, amount: Long) {
         viewModelScope.launch {
-            // Podrías exponer estado updateState si quisieras
-            repository.updateAuction(id, auction)
-            // Luego recarga lista
-            loadAuctions()
-        }
-    }
-
-    /**
-     * Asigna el número ganador. Exponer estado en winnerResult.
-     */
-    fun saveWinner(id: Int, winnerNumber: Int) {
-        viewModelScope.launch {
-            _winnerResult.value = UiState.Loading
-            val result = repository.saveWinner(id, winnerNumber)
-            if (result.isSuccess) {
-                _winnerResult.value = UiState.Success(Unit)
-                // Recargar detalle tras asignar ganador
-                loadAuctionById(id)
-            } else {
-                _winnerResult.value = UiState.Error(result.exceptionOrNull() ?: Exception("Unknown error"))
+            _bidState.value = UiState.Loading
+            repository.postBid(auctionId, number, amount).onSuccess {
+                _bidState.value = UiState.Success(Unit)
+            }.onFailure { ex ->
+                _bidState.value = UiState.Error(ex)
             }
         }
     }
+    fun resetBidState() { _bidState.value = UiState.Idle }
 
-    /**
-     * Resetea el estado de asignar ganador a Idle.
-     */
-    fun resetWinnerState() {
-        _winnerResult.value = UiState.Idle
+    /** Finalizar subasta (solo admin), indicando número ganador */
+    fun finalizeAuction(auctionId: Int, winnerNumber: Int) {
+        viewModelScope.launch {
+            _finalizeState.value = UiState.Loading
+            repository.finalizeAuction(auctionId, winnerNumber).onSuccess {
+                _finalizeState.value = UiState.Success(Unit)
+                loadAuctions()
+            }.onFailure { ex ->
+                _finalizeState.value = UiState.Error(ex)
+            }
+        }
     }
+    fun resetFinalizeState() { _finalizeState.value = UiState.Idle }
+
+    fun deleteAuction(auctionId: Int) {
+        viewModelScope.launch {
+            _deleteState.value = UiState.Loading
+            repository.deleteAuction(auctionId).onSuccess {
+                _deleteState.value = UiState.Success(Unit)
+                loadAuctions()
+            }.onFailure { ex ->
+                _deleteState.value = UiState.Error(ex)
+            }
+        }
+    }
+    fun resetDeleteState() { _deleteState.value = UiState.Idle }
 }

@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     implementation("androidx.compose.ui:ui:1.4.0")
+    implementation("io.coil-kt:coil-compose:2.2.2")
 
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

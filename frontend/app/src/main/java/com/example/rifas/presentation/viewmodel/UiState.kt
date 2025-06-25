@@ -1,3 +1,4 @@
+// src/main/java/com/example/rifas/presentation/viewmodel/UiState.kt
 package com.example.rifas.presentation.viewmodel
 
 sealed class UiState<out T> {

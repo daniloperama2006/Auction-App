@@ -1,3 +1,4 @@
+// src/main/java/com/example/rifas/data/model/Auction.kt
 package com.example.rifas.data.model
 
 data class Auction(
