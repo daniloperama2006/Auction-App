@@ -11,7 +11,11 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.io.IOException
 
-class AuctionRepository(private val api: AuctionApiService) {
+/**
+ * Repository responsible for communicating with the Auction API.
+ * Handles all auction-related operations and wraps results in a Kotlin Result.
+ */
+open class AuctionRepository(private val api: AuctionApiService) {
 
     suspend fun getAuctions(search: String? = null): Result<List<AuctionSummary>> {
         return try {
@@ -31,7 +35,7 @@ class AuctionRepository(private val api: AuctionApiService) {
             val response = api.getAuctionById(id)
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
-                    ?: Result.failure(Exception("Respuesta vacía en detalle"))
+                    ?: Result.failure(Exception("Empty response in detail"))
             } else {
                 Result.failure(HttpException(response))
             }
@@ -40,6 +44,9 @@ class AuctionRepository(private val api: AuctionApiService) {
         }
     }
 
+    /**
+     * Creates a new auction with optional image.
+     */
     suspend fun createAuction(
         name: String,
         date: String,
@@ -53,7 +60,7 @@ class AuctionRepository(private val api: AuctionApiService) {
             val response = api.createAuction(namePart, datePart, minOfferPart, imagePart)
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
-                    ?: Result.failure(Exception("Respuesta vacía al crear subasta"))
+                    ?: Result.failure(Exception("Empty response when creating auction"))
             } else {
                 Result.failure(HttpException(response))
             }
@@ -62,6 +69,9 @@ class AuctionRepository(private val api: AuctionApiService) {
         }
     }
 
+    /**
+     * Posts a bid to the given auction.
+     */
     suspend fun postBid(auctionId: Int, number: Int, amount: Long): Result<Unit> {
         return try {
             val response = api.postBid(auctionId, BidRequest(number, amount))
@@ -75,6 +85,9 @@ class AuctionRepository(private val api: AuctionApiService) {
         }
     }
 
+    /**
+     * Finalizes an auction by providing the winner's number.
+     */
     suspend fun finalizeAuction(auctionId: Int, winnerNumber: Int): Result<Unit> {
         return try {
             val response = api.finalizeAuction(auctionId, WinnerRequest(winnerNumber))
@@ -88,6 +101,9 @@ class AuctionRepository(private val api: AuctionApiService) {
         }
     }
 
+    /**
+     * Deletes an auction by ID.
+     */
     suspend fun deleteAuction(auctionId: Int): Result<Unit> {
         return try {
             val response = api.deleteAuction(auctionId)

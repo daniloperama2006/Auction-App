@@ -1,4 +1,3 @@
-// src/main/java/com/example/rifas/presentation/ui/AuctionDetailActivity.kt
 package com.example.rifas.presentation.ui
 
 import android.os.Bundle
@@ -10,23 +9,32 @@ import com.example.rifas.data.repository.AuctionRepository
 import com.example.rifas.presentation.viewmodel.AuctionViewModel
 import com.example.rifas.presentation.viewmodel.AuctionViewModelFactory
 
+/**
+ * Hosts the detail screen for a specific auction.
+ *
+ * Expects the auction ID passed via Intent extras ("auctionId").
+ */
 class AuctionDetailActivity : ComponentActivity() {
+
+    // ViewModel initialized with custom factory
     private val viewModel: AuctionViewModel by viewModels {
         AuctionViewModelFactory(AuctionRepository(RetrofitClient.apiService))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val auctionId = intent.getIntExtra("auctionId", -1)
+
         setContent {
             if (auctionId != -1) {
                 AuctionDetailScreen(
                     auctionId = auctionId,
                     viewModel = viewModel,
-                    onNavigateBack = { finish() }
+                    onNavigateBack = { finish() }  // Finishes activity on back
                 )
             } else {
-                finish()
+                finish()  // Invalid ID fallback
             }
         }
     }

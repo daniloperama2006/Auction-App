@@ -10,28 +10,38 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MultipartBody
 
+/**
+ * ViewModel for managing auction-related UI logic and state.
+ */
 class AuctionViewModel(
     private val repository: AuctionRepository
 ) : ViewModel() {
 
+    // Holds the current list of auction summaries
     private val _auctionList = MutableStateFlow<List<AuctionSummary>>(emptyList())
     val auctionList: StateFlow<List<AuctionSummary>> = _auctionList
 
+    // Holds the state of a selected auction's detail
     private val _selectedAuctionDetail = MutableStateFlow<UiState<AuctionDetail>>(UiState.Idle)
     val selectedAuctionDetail: StateFlow<UiState<AuctionDetail>> = _selectedAuctionDetail
 
+    // Tracks the state of auction creation
     private val _createState = MutableStateFlow<UiState<AuctionDetail>>(UiState.Idle)
     val createState: StateFlow<UiState<AuctionDetail>> = _createState
 
+    // Tracks the state of bidding
     private val _bidState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val bidState: StateFlow<UiState<Unit>> = _bidState
 
+    // Tracks the state of auction finalization
     private val _finalizeState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val finalizeState: StateFlow<UiState<Unit>> = _finalizeState
 
+    // Tracks the state of auction deletion
     private val _deleteState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val deleteState: StateFlow<UiState<Unit>> = _deleteState
 
+    /** Loads all auctions, optionally filtered by a search string */
     fun loadAuctions(search: String? = null) {
         viewModelScope.launch {
             repository.getAuctions(search).onSuccess { list ->
@@ -40,6 +50,7 @@ class AuctionViewModel(
         }
     }
 
+    /** Loads the details of a specific auction by ID */
     fun loadAuctionDetail(id: Int) {
         viewModelScope.launch {
             _selectedAuctionDetail.value = UiState.Loading
@@ -51,6 +62,7 @@ class AuctionViewModel(
         }
     }
 
+    /** Creates a new auction with optional image */
     fun createAuction(
         name: String,
         date: String,
@@ -72,6 +84,7 @@ class AuctionViewModel(
         _createState.value = UiState.Idle
     }
 
+    /** Posts a bid for a specific number and amount in an auction */
     fun postBid(auctionId: Int, number: Int, amount: Long) {
         viewModelScope.launch {
             _bidState.value = UiState.Loading
@@ -82,9 +95,10 @@ class AuctionViewModel(
             }
         }
     }
+
     fun resetBidState() { _bidState.value = UiState.Idle }
 
-    /** Finalizar subasta (solo admin), indicando número ganador */
+    /** Finalizes the auction by declaring a winner (admin only) */
     fun finalizeAuction(auctionId: Int, winnerNumber: Int) {
         viewModelScope.launch {
             _finalizeState.value = UiState.Loading
@@ -96,8 +110,10 @@ class AuctionViewModel(
             }
         }
     }
+
     fun resetFinalizeState() { _finalizeState.value = UiState.Idle }
 
+    /** Deletes an auction by ID */
     fun deleteAuction(auctionId: Int) {
         viewModelScope.launch {
             _deleteState.value = UiState.Loading
@@ -109,5 +125,6 @@ class AuctionViewModel(
             }
         }
     }
+
     fun resetDeleteState() { _deleteState.value = UiState.Idle }
 }

@@ -1,4 +1,3 @@
-// src/main/java/com/example/rifas/MainActivity.kt
 package com.example.rifas
 
 import android.content.Intent
@@ -16,7 +15,12 @@ import com.example.rifas.presentation.ui.AuctionDetailActivity
 import com.example.rifas.presentation.viewmodel.AuctionViewModel
 import com.example.rifas.presentation.viewmodel.AuctionViewModelFactory
 
+/**
+ * Main entry point of the app, displaying the list of auctions.
+ */
 class MainActivity : ComponentActivity() {
+
+    // Inject ViewModel with repository instance via factory
     private val viewModel: AuctionViewModel by viewModels {
         AuctionViewModelFactory(AuctionRepository(RetrofitClient.apiService))
     }
@@ -28,9 +32,11 @@ class MainActivity : ComponentActivity() {
             AuctionListScreen(
                 viewModel = viewModel,
                 onNavigateToCreate = {
+                    // Open CreateAuctionActivity
                     startActivity(Intent(this, CreateAuctionActivity::class.java))
                 },
                 onNavigateToDetail = { auctionId ->
+                    // Open AuctionDetailActivity with selected ID
                     val intent = Intent(this, AuctionDetailActivity::class.java)
                     intent.putExtra("auctionId", auctionId)
                     startActivity(intent)

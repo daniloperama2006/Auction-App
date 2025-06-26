@@ -104,10 +104,21 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // JUnit4 for local unit tests
-    testImplementation("junit:junit:4.13.2")
-    // Robolectric for JVM Android environment
-    testImplementation("org.robolectric:robolectric:4.9.1")
-    // AndroidX core‑testing to get ApplicationProvider
-    testImplementation("androidx.test:core:1.4.0")
+    // Mockito “core” normal (te da las APIs de mock(), whenever(), etc.)
+    testImplementation ("org.mockito:mockito-core:4.+")
+
+    // Mockito “inline” instrumenta clases finales en tiempo de ejecución
+    testImplementation ("org.mockito:mockito-inline:4.+")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+    // (Opcional) Si necesitas ApplicationProvider para Context en tests:
+    testImplementation ("androidx.test:core:1.5.0")
+// build.gradle (module)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+
+    // Coroutines test
+    testImplementation ("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.0")
+
+    // JUnit
+    testImplementation ("junit:junit:4.13.2")
 }
